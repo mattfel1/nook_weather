@@ -1,0 +1,20 @@
+// Safe, known-good toolchain for a minSdk-7 app:
+//   AGP 7.0.4 + Gradle 7.2 + build-tools 30.0.3
+// Newer AGP/Gradle generally work too, but this combo is comfortable with
+// the very low minSdk and the `namespace` DSL.
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.1.3'
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}

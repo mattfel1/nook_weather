@@ -1,0 +1,27 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.nookframe.weather'
+    compileSdk 30
+
+    defaultConfig {
+        applicationId 'com.nookframe.weather'
+        // minSdk MUST stay 7 — the manifest minSdk is what lets Android 2.1
+        // accept the install. Raising it will make the Nook refuse the APK.
+        minSdkVersion 7
+        targetSdkVersion 7
+        versionCode 1
+        versionName '1.0'
+    }
+
+    // The Nook (Android 2.1) only understands JAR / v1 signatures. Debug
+    // builds include v1 by default for minSdk < 24, so `assembleDebug`
+    // produces an installable APK as-is. (v2/v3 are simply ignored by the device.)
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+}

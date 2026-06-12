@@ -31,8 +31,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 # -------- CONFIG ----------------------------------------------------------
 PORT = 8080
-LAT = 45.4215
-LON = -75.6972
+LAT = 45.406254
+LON = -75.729517
 LABEL = "Ottawa"
 
 DEFAULT_ORIENTATION = "portrait"        # 'portrait' | 'landscape'

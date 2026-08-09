@@ -28,7 +28,7 @@ public class WeatherActivity extends Activity {
     // PLAIN HTTP ONLY. Android 2.1 has no TLS 1.2, so any https:// target
     // will fail to connect. Point this at your LAN weather server
     // (see server/weather-server.js), e.g.:
-    private static final String IMAGE_URL = "http://192.168.2.101:8080/weather.png?o=portrait";
+    private static final String IMAGE_URL = "http://raspberrypi.local:8080/weather.png?o=portrait";
     // wttr.in alternative (often fails: it redirects http -> https):
     //   "http://wttr.in/Ottawa_0.png"
 

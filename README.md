@@ -313,12 +313,12 @@ WiFi ADB mode resets on every Nook reboot. To re-enable, plug in USB and re-run 
 # Diagnostics
 ./adb.exe shell dumpsys window | findstr "mCurrentFocus"
 ./adb.exe shell ps | findstr nookframe
-./adb.exe logcat -d -t 100
+./adb.exe logcat -d -t 101
 ./adb.exe shell ip addr
 
 # Network test from Nook
-./adb.exe shell ping -c 3 192.168.2.100
-./adb.exe shell wget -O /data/local/tmp/test.png http://192.168.2.100:8080/weather.png
+./adb.exe shell ping -c 3 192.168.2.101
+./adb.exe shell wget -O /data/local/tmp/test.png http://192.168.2.101:8080/weather.png
 
 # WiFi
 ./adb.exe shell svc wifi disable

@@ -32,7 +32,7 @@ public class WeatherActivity extends Activity {
     // wttr.in alternative (often fails: it redirects http -> https):
     //   "http://wttr.in/Ottawa_0.png"
 
-    private static final long REFRESH_MS = 15 * 60 * 1000L; // refresh every N min
+    private static final long REFRESH_MS = 1 * 60 * 1000L; // refresh every N min
     // ----------------------------------------------------------------------
 
     private static final int WINDOW_FLAGS =

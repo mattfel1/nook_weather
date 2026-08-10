@@ -345,3 +345,31 @@ Also: if a fix involves disabling a system package, disable exactly one and test
 Finally: the CWM SD card is the most important physical artifact of this project. Without it, "I'll just experiment" becomes "I just bricked the device." With it, every disaster is reversible.
 
 Happy hacking, future-me. Hope this one is still going by your front door.
+
+## Troubleshooting: Pi can reach LAN peers but not the gateway
+
+**Symptoms**
+- `weather-server.py` logs `urlopen error [Errno -3] Temporary failure in name resolution`
+- `ping 8.8.8.8` returns "Destination Host Unreachable" *from the Pi's own IP*
+- `ping <gateway>` fails, but pinging another LAN device works fine
+- `ip neigh show <gateway>` shows `INCOMPLETE` or `FAILED`
+- Wi-Fi looks perfect: associated, `Link Quality=70/70`, no firewall rules
+
+**Cause**
+The Bell modem routes the Pi's traffic fine but stops answering its ARP
+requests. Nothing is wrong with the Pi. Assigning a new IP clears it
+temporarily (hours), then it recurs on the new address.
+
+**Fix**
+Give the Pi a static ARP entry for the gateway. Get the modem's LAN MAC
+from another machine (`arp -a <gateway-ip>`), then:
+
+    sudo ip neigh replace <gateway-ip> lladdr <modem-mac> dev wlan0 nud permanent
+
+Make it persistent via `/etc/systemd/system/static-gw-arp.service`
+(Type=oneshot, RemainAfterExit=yes, After=network-online.target) plus a
+`*/5` cron re-assert in case wlan0 flaps.
+
+**Caveat**
+Breaks if the modem's LAN MAC changes (factory reset or hardware swap).
+Re-run `arp -a` and update the MAC in both the unit file and crontab.

@@ -26,8 +26,8 @@ const DEFAULT_ORIENTATION = 'landscape';   // <-- flip to 'landscape' when you d
 const LANDSCAPE_ROTATION = 'cw';
 
 // Ottawa
-const LAT = 45.4215;
-const LON = -75.6972;
+const LAT = 45.3624;
+const LON = -75.7217;
 const LABEL = 'Ottawa';
 
 const PANEL_W = 600, PANEL_H = 800;       // physical panel (portrait)

@@ -164,13 +164,13 @@ def render_portrait(data):
 
     # Tiny city label in the top-left corner (sanity check that geolocation
     # is still pointing at the right place). Kept small on purpose.
-    draw.text((6, 4), LABEL, fill=0, font=load_font(14))
+    draw.text((6, 4), LABEL, fill=0, font=load_font(20))
 
     # --- Current conditions block ---
-    draw_icon(draw, c["weather_code"], W / 2 - 170, 165, 60)
-    draw_text_centered(draw, W / 2 + 30, 95,
+    draw_icon(draw, c["weather_code"], W / 2 - 200, 175, 60)
+    draw_text_centered(draw, W / 2 + 30, 75,
                        f"{round(c['temperature_2m'])}\u00B0",
-                       load_font(150, bold=True))
+                       load_font(190, bold=True))
     draw_text_centered(draw, W / 2, 255,
                        WMO.get(c["weather_code"], f"Code {c['weather_code']}"),
                        load_font(38))
@@ -207,7 +207,7 @@ def render_portrait(data):
 
     # Time in top-right corner (implied it's the last-updated time)
     ts = time_now_str()
-    f_time = load_font(28, bold=True)
+    f_time = load_font(36, bold=True)
     tw = text_w(draw, ts, f_time)
     draw.text((W - tw - 8, 2), ts, fill=0, font=f_time)
     return img
@@ -221,14 +221,14 @@ def render_landscape(data):
     draw = ImageDraw.Draw(img)
 
     # Tiny city label in the top-left corner
-    draw.text((6, 4), LABEL, fill=0, font=load_font(14))
+    draw.text((6, 4), LABEL, fill=0, font=load_font(20))
 
     # --- LEFT: current conditions ---
     lx = 210
-    draw_icon(draw, c["weather_code"], lx, 130, 60)
-    draw_text_centered(draw, lx, 210,
+    draw_icon(draw, c["weather_code"], lx, 120, 60)
+    draw_text_centered(draw, lx, 190,
                        f"{round(c['temperature_2m'])}\u00B0",
-                       load_font(130, bold=True))
+                       load_font(170, bold=True))
     draw_text_centered(draw, lx, 360,
                        WMO.get(c["weather_code"], f"Code {c['weather_code']}"),
                        load_font(32))
@@ -266,7 +266,7 @@ def render_landscape(data):
 
     # Time in top-right corner (implied it's the last-updated time)
     ts = time_now_str()
-    f_time = load_font(28, bold=True)
+    f_time = load_font(36, bold=True)
     tw = text_w(draw, ts, f_time)
     draw.text((W - tw - 8, 2), ts, fill=0, font=f_time)
     return img

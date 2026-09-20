@@ -33,7 +33,7 @@ from PIL import Image, ImageDraw, ImageFont
 PORT = 8080
 LAT = 45.406254
 LON = -75.729517
-LABEL = "Ottawa"
+LABEL = "Ottawa"     # rendered small in the top corner as a sanity check
 
 DEFAULT_ORIENTATION = "portrait"        # 'portrait' | 'landscape'
 LANDSCAPE_ROTATION = "cw"               # 'cw' | 'ccw'
@@ -132,7 +132,7 @@ def fetch_weather():
         "https://api.open-meteo.com/v1/forecast"
         f"?latitude={LAT}&longitude={LON}"
         "&current=temperature_2m,apparent_temperature,weather_code,"
-        "wind_speed_10m,relative_humidity_2m"
+        "relative_humidity_2m,uv_index"
         "&daily=temperature_2m_max,temperature_2m_min,weather_code,"
         "precipitation_probability_max"
         "&forecast_days=4&timezone=auto"
@@ -149,6 +149,12 @@ def day_name(date_str, idx):
     return datetime.strptime(date_str, "%Y-%m-%d").strftime("%a")
 
 
+def time_now_str():
+    """Return e.g. '3:07pm' — no leading zero, lowercase am/pm."""
+    now = datetime.now()
+    return now.strftime("%I:%M%p").lstrip("0").lower()
+
+
 # ---------- portrait: 600x800, current on top, 3-day strip below ----------
 def render_portrait(data):
     c, d = data["current"], data["daily"]
@@ -156,45 +162,54 @@ def render_portrait(data):
     img = Image.new("L", (W, H), 255)   # 8-bit grayscale, white bg
     draw = ImageDraw.Draw(img)
 
-    draw_text_centered(draw, W / 2, 30, LABEL, load_font(44, bold=True))
+    # Tiny city label in the top-left corner (sanity check that geolocation
+    # is still pointing at the right place). Kept small on purpose.
+    draw.text((6, 4), LABEL, fill=0, font=load_font(14))
 
-    draw_icon(draw, c["weather_code"], W / 2 - 170, 180, 60)
-    draw_text_centered(draw, W / 2 + 30, 110,
+    # --- Current conditions block ---
+    draw_icon(draw, c["weather_code"], W / 2 - 170, 165, 60)
+    draw_text_centered(draw, W / 2 + 30, 95,
                        f"{round(c['temperature_2m'])}\u00B0",
                        load_font(150, bold=True))
-    draw_text_centered(draw, W / 2, 270,
+    draw_text_centered(draw, W / 2, 255,
                        WMO.get(c["weather_code"], f"Code {c['weather_code']}"),
                        load_font(38))
     draw_text_centered(
-        draw, W / 2, 330,
+        draw, W / 2, 315,
         f"Feels {round(c['apparent_temperature'])}\u00B0   "
-        f"Hum {c['relative_humidity_2m']}%   "
-        f"Wind {round(c['wind_speed_10m'])} km/h",
+        f"Hum {c['relative_humidity_2m']}%",
         load_font(28),
     )
 
-    draw.rectangle((40, 390, W - 40, 393), fill=0)
+    # UV — prominent, on its own row
+    uv = c.get("uv_index", 0) or 0
+    draw_text_centered(draw, W / 2, 355,
+                       f"UV {uv:.0f}",
+                       load_font(40, bold=True))
 
+    draw.rectangle((40, 415, W - 40, 418), fill=0)
+
+    # --- 3-day forecast ---
     col_w = W / 3
     for i in range(3):
         cx = col_w * i + col_w / 2
-        draw_text_centered(draw, cx, 420, day_name(d["time"][i], i),
+        draw_text_centered(draw, cx, 440, day_name(d["time"][i], i),
                            load_font(32, bold=True))
-        draw_icon(draw, d["weather_code"][i], cx, 530, 42)
-        draw_text_centered(draw, cx, 600,
+        draw_icon(draw, d["weather_code"][i], cx, 545, 42)
+        draw_text_centered(draw, cx, 615,
                            f"{round(d['temperature_2m_max'][i])}\u00B0",
                            load_font(36, bold=True))
-        draw_text_centered(draw, cx, 645,
+        draw_text_centered(draw, cx, 660,
                            f"{round(d['temperature_2m_min'][i])}\u00B0",
                            load_font(30))
         prob = d["precipitation_probability_max"][i] or 0
-        draw_text_centered(draw, cx, 695, f"{prob}% precip", load_font(24))
+        draw_text_centered(draw, cx, 705, f"{prob}% precip", load_font(24))
 
-    draw_text_centered(
-        draw, W / 2, 760,
-        f"Updated {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-        load_font(20),
-    )
+    # Time in top-right corner (implied it's the last-updated time)
+    ts = time_now_str()
+    f_time = load_font(28, bold=True)
+    tw = text_w(draw, ts, f_time)
+    draw.text((W - tw - 8, 2), ts, fill=0, font=f_time)
     return img
 
 
@@ -205,27 +220,35 @@ def render_landscape(data):
     img = Image.new("L", (W, H), 255)
     draw = ImageDraw.Draw(img)
 
+    # Tiny city label in the top-left corner
+    draw.text((6, 4), LABEL, fill=0, font=load_font(14))
+
+    # --- LEFT: current conditions ---
     lx = 210
-    draw_text_centered(draw, lx, 30, LABEL, load_font(40, bold=True))
-    draw_icon(draw, c["weather_code"], lx, 170, 65)
-    draw_text_centered(draw, lx, 260,
+    draw_icon(draw, c["weather_code"], lx, 130, 60)
+    draw_text_centered(draw, lx, 210,
                        f"{round(c['temperature_2m'])}\u00B0",
                        load_font(130, bold=True))
-    draw_text_centered(draw, lx, 400,
+    draw_text_centered(draw, lx, 360,
                        WMO.get(c["weather_code"], f"Code {c['weather_code']}"),
-                       load_font(34))
+                       load_font(32))
     draw_text_centered(
-        draw, lx, 450,
+        draw, lx, 410,
         f"Feels {round(c['apparent_temperature'])}\u00B0   "
         f"Hum {c['relative_humidity_2m']}%",
-        load_font(26),
+        load_font(24),
     )
-    draw_text_centered(draw, lx, 490,
-                       f"Wind {round(c['wind_speed_10m'])} km/h",
-                       load_font(26))
 
-    draw.rectangle((420, 40, 423, H - 40), fill=0)
+    # UV — prominent
+    uv = c.get("uv_index", 0) or 0
+    draw_text_centered(draw, lx, 455,
+                       f"UV {uv:.0f}",
+                       load_font(38, bold=True))
 
+    # Divider
+    draw.rectangle((420, 40, 423, H - 60), fill=0)
+
+    # --- RIGHT: 3-day forecast ---
     rx = 430
     row_h = (H - 80) / 3
     for i in range(3):
@@ -241,11 +264,11 @@ def render_landscape(data):
         draw.text((rx + 130, cy + 25), f"{prob}% precip",
                   fill=0, font=load_font(22))
 
-    draw_text_centered(
-        draw, W / 2, H - 30,
-        f"Updated {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-        load_font(18),
-    )
+    # Time in top-right corner (implied it's the last-updated time)
+    ts = time_now_str()
+    f_time = load_font(28, bold=True)
+    tw = text_w(draw, ts, f_time)
+    draw.text((W - tw - 8, 2), ts, fill=0, font=f_time)
     return img
 
 

@@ -33,20 +33,20 @@ import urllib.parse
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from PIL import Image, ImageDraw, ImageFont
-
+ 
 # -------- CONFIG ----------------------------------------------------------
 PORT = 8080
 LAT = 45.406254
 LON = -75.729517
 LABEL = "Ottawa"
-
+ 
 DEFAULT_ORIENTATION = "portrait"        # 'portrait' | 'landscape'
 LANDSCAPE_ROTATION = "cw"               # 'cw' | 'ccw'
-
+ 
 HOURLY_HOURS = 8                        # how many hours to chart
-
+ 
 PANEL_W, PANEL_H = 600, 800             # physical Nook panel
-
+ 
 WMO = {
     0: "Clear", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
     45: "Fog", 48: "Rime fog",
@@ -59,9 +59,9 @@ WMO = {
     85: "Snow showers", 86: "Snow showers",
     95: "Thunderstorm", 96: "T-storm + hail", 99: "T-storm + hail",
 }
-
+ 
 # --------------------------------------------------------------------------
-
+ 
 def load_font(size, bold=False):
     paths = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold
@@ -75,19 +75,19 @@ def load_font(size, bold=False):
         except (OSError, IOError):
             continue
     return ImageFont.load_default()
-
-
+ 
+ 
 def text_w(draw, text, font):
     if hasattr(draw, "textbbox"):
         l, t, r, b = draw.textbbox((0, 0), text, font=font)
         return r - l
     return draw.textsize(text, font=font)[0]
-
-
+ 
+ 
 def draw_text_centered(draw, x, y, text, font):
     draw.text((x - text_w(draw, text, font) / 2, y), text, fill=0, font=font)
-
-
+ 
+ 
 def draw_icon(draw, code, cx, cy, r):
     width = 3
     if code in (0, 1):
@@ -111,8 +111,8 @@ def draw_icon(draw, code, cx, cy, r):
                       fill=0, width=width)
     else:
         _cloud(draw, cx, cy, r * 0.8, width)
-
-
+ 
+ 
 def _cloud(draw, cx, cy, r, width):
     draw.arc((cx - r * 0.95, cy - r * 0.45, cx - r * 0.05, cy + r * 0.45),
              90, 270, fill=0, width=width)
@@ -120,8 +120,8 @@ def _cloud(draw, cx, cy, r, width):
              180, 342, fill=0, width=width)
     draw.arc((cx + r * 0.05, cy - r * 0.5, cx + r * 0.85, cy + r * 0.3),
              216, 90, fill=0, width=width)
-
-
+ 
+ 
 def fetch_weather():
     url = (
         "https://api.open-meteo.com/v1/forecast"
@@ -135,21 +135,21 @@ def fetch_weather():
     )
     with urllib.request.urlopen(url, timeout=15) as r:
         return json.loads(r.read().decode("utf-8"))
-
-
+ 
+ 
 def day_name(date_str, idx):
     if idx == 0:
         return "Today"
     if idx == 1:
         return "Tmrw"
     return datetime.strptime(date_str, "%Y-%m-%d").strftime("%a")
-
-
+ 
+ 
 def time_now_str():
     now = datetime.now()
     return now.strftime("%I:%M%p").lstrip("0").lower()
-
-
+ 
+ 
 def current_hour_index(hourly_times):
     """Find the index in hourly arrays closest to current local time."""
     now = datetime.now()
@@ -158,23 +158,23 @@ def current_hour_index(hourly_times):
         if t.startswith(target):
             return i
     return 0
-
-
+ 
+ 
 def draw_hourly_chart(draw, x, y, w, h, hourly, start_idx, hours):
     """Temperature line with per-hour value labels + precip probability bars
     along the bottom. Time on the x-axis as 12h am/pm."""
     temps = hourly["temperature_2m"][start_idx : start_idx + hours]
     probs = hourly["precipitation_probability"][start_idx : start_idx + hours]
     times = hourly["time"][start_idx : start_idx + hours]
-
+ 
     temps = [t if t is not None else 0 for t in temps]
     probs = [p if p is not None else 0 for p in probs]
-
+ 
     if len(temps) < 2:
         draw_text_centered(draw, x + w / 2, y + h / 2,
                            "No hourly data", load_font(16))
         return
-
+ 
     pad_left, pad_right = 28, 28
     pad_top, pad_bottom = 18, 26
     bar_band_h = 22
@@ -183,22 +183,22 @@ def draw_hourly_chart(draw, x, y, w, h, hourly, start_idx, hours):
     plot_y0 = y + pad_top
     plot_y1 = y + h - pad_bottom
     plot_w = plot_x1 - plot_x0
-
+ 
     tmin, tmax = min(temps), max(temps)
     if tmax - tmin < 4:
         mid = (tmax + tmin) / 2
         tmin, tmax = mid - 2, mid + 2
-
+ 
     line_band_y0 = plot_y0
     line_band_y1 = plot_y1 - bar_band_h - 2
-
+ 
     def temp_to_y(t):
         frac = (t - tmin) / (tmax - tmin)
         return line_band_y1 - frac * (line_band_y1 - line_band_y0)
-
+ 
     n = len(temps)
     step = plot_w / (n - 1)
-
+ 
     # Precip bars
     bar_w = step * 0.55
     for i, p in enumerate(probs):
@@ -211,16 +211,16 @@ def draw_hourly_chart(draw, x, y, w, h, hourly, start_idx, hours):
         by0 = plot_y1 - bh
         by1 = plot_y1
         draw.rectangle((bx0, by0, bx1, by1), fill=0)
-
+ 
     draw.line((plot_x0, plot_y1, plot_x1, plot_y1), fill=0, width=1)
-
+ 
     # Temp line + dots
     pts = [(plot_x0 + i * step, temp_to_y(t)) for i, t in enumerate(temps)]
     for i in range(len(pts) - 1):
         draw.line((pts[i], pts[i + 1]), fill=0, width=3)
     for px, py in pts:
         draw.ellipse((px - 3, py - 3, px + 3, py + 3), fill=0)
-
+ 
     # Per-hour temperature + precip % labels
     f_val = load_font(12, bold=True)
     f_precip = load_font(11)
@@ -235,23 +235,23 @@ def draw_hourly_chart(draw, x, y, w, h, hourly, start_idx, hours):
             bh = (p / 100.0) * bar_band_h
             draw.text((px - pw / 2, plot_y1 - bh - 13),
                       p_label, fill=0, font=f_precip)
-
+ 
     # Hour labels along the bottom (12h am/pm) with collision avoidance
     f_hr = load_font(13)
-
+ 
     def fmt_hour(hh24):
         h_ = hh24 % 12 or 12
         return f"{h_}{'a' if hh24 < 12 else 'p'}"
-
+ 
     def lbl(i):
         s = fmt_hour(int(times[i][11:13]))
         return s, text_w(draw, s, f_hr)
-
+ 
     n_labels = len(times)
     min_gap = 6
     last_text, last_w = lbl(n_labels - 1)
     last_left = (plot_x0 + (n_labels - 1) * step) - last_w / 2
-
+ 
     chosen = []
     last_right_drawn = -1e9
     for i in range(n_labels - 1):
@@ -266,25 +266,25 @@ def draw_hourly_chart(draw, x, y, w, h, hourly, start_idx, hours):
             chosen.append((left, text))
             last_right_drawn = right
     chosen.append((last_left, last_text))
-
+ 
     for left, text in chosen:
         draw.text((left, plot_y1 + 4), text, fill=0, font=f_hr)
-
-
+ 
+ 
 # ---------- portrait: 600x800 ---------------------------------------------
 def render_portrait(data):
     c, h, d = data["current"], data["hourly"], data["daily"]
     W, H = 600, 800
     img = Image.new("L", (W, H), 255)
     draw = ImageDraw.Draw(img)
-
+ 
     # City tiny top-left, time top-right
     draw.text((6, 4), LABEL, fill=0, font=load_font(20))
     ts = time_now_str()
     f_time = load_font(36, bold=True)
     tw = text_w(draw, ts, f_time)
     draw.text((W - tw - 8, 2), ts, fill=0, font=f_time)
-
+ 
     # --- Current conditions block ---
     draw_icon(draw, c["weather_code"], W / 2 - 200, 155, 55)
     draw_text_centered(draw, W / 2 + 30, 60,
@@ -303,14 +303,14 @@ def render_portrait(data):
     draw_text_centered(draw, W / 2, 315,
                        f"UV {uv:.0f}",
                        load_font(38, bold=True))
-
+ 
     # --- Hourly chart ---
     start = current_hour_index(h["time"])
     draw_hourly_chart(draw, 20, 370, W - 40, 175, h, start, HOURLY_HOURS)
-
+ 
     # Divider between today (chart is same day) and 2-day forecast
     draw.rectangle((40, 560, W - 40, 562), fill=0)
-
+ 
     # --- 3-day forecast ---
     col_w = W / 3
     for i in range(3):
@@ -326,24 +326,24 @@ def render_portrait(data):
                            load_font(24))
         prob = d["precipitation_probability_max"][i] or 0
         draw_text_centered(draw, cx, 785, f"{prob}% precip", load_font(16))
-
+ 
     return img
-
-
+ 
+ 
 # ---------- landscape: 800x600 --------------------------------------------
 def render_landscape(data):
     c, h, d = data["current"], data["hourly"], data["daily"]
     W, H = 800, 600
     img = Image.new("L", (W, H), 255)
     draw = ImageDraw.Draw(img)
-
+ 
     # City tiny top-left, time top-right
     draw.text((6, 4), LABEL, fill=0, font=load_font(20))
     ts = time_now_str()
     f_time = load_font(36, bold=True)
     tw = text_w(draw, ts, f_time)
     draw.text((W - tw - 8, 2), ts, fill=0, font=f_time)
-
+ 
     # --- LEFT: current conditions ---
     lx = 155
     draw_icon(draw, c["weather_code"], lx, 100, 45)
@@ -363,17 +363,17 @@ def render_landscape(data):
     draw_text_centered(draw, lx, 410,
                        f"UV {uv:.0f}",
                        load_font(34, bold=True))
-
+ 
     # Divider between left/middle
     draw.rectangle((310, 55, 312, H - 30), fill=0)
-
+ 
     # --- MIDDLE: hourly chart ---
     start = current_hour_index(h["time"])
     draw_hourly_chart(draw, 320, 55, 300, H - 90, h, start, HOURLY_HOURS)
-
+ 
     # Divider middle/right
     draw.rectangle((630, 55, 632, H - 30), fill=0)
-
+ 
     # --- RIGHT: 3-day forecast ---
     rx = 640
     rw = W - rx - 5
@@ -390,16 +390,16 @@ def render_landscape(data):
         prob = d["precipitation_probability_max"][i] or 0
         draw.text((rx + 5, cy + 15), f"{prob}% precip",
                   fill=0, font=load_font(16))
-
+ 
     return img
-
-
+ 
+ 
 def rotate_into_panel(landscape_img):
     if LANDSCAPE_ROTATION == "cw":
         return landscape_img.rotate(-90, expand=True)
     return landscape_img.rotate(90, expand=True)
-
-
+ 
+ 
 def render(orientation):
     data = fetch_weather()
     if orientation == "landscape":
@@ -407,8 +407,8 @@ def render(orientation):
     if orientation == "landscape-preview":
         return render_landscape(data)
     return render_portrait(data)
-
-
+ 
+ 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
@@ -434,11 +434,11 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(500)
             self.end_headers()
             self.wfile.write(str(e).encode("utf-8"))
-
+ 
     def log_message(self, fmt, *args):
         print(f"[{self.log_date_time_string()}] {fmt % args}")
-
-
+ 
+ 
 def main():
     server = HTTPServer(("0.0.0.0", PORT), Handler)
     print(f"NookFrame weather server: http://0.0.0.0:{PORT}/weather.png")
@@ -447,7 +447,7 @@ def main():
         server.serve_forever()
     except KeyboardInterrupt:
         server.server_close()
-
-
+ 
+ 
 if __name__ == "__main__":
     main()

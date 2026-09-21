@@ -15,6 +15,14 @@ Toggle layouts in the browser:
     http://<pi>:8080/weather.png?o=portrait
     http://<pi>:8080/weather.png?o=landscape
     http://<pi>:8080/weather.png?o=landscape-preview   (un-rotated, for PC viewing)
+
+
+On the pi:
+pi@raspberrypi:~/nookframe $ curl -o weather-server.py https://raw.githubusercontent.com/mattfel1/nook_weather/main/server/weather-server.py
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 15304  100 15304    0     0  37601      0 --:--:-- --:--:-- --:--:-- 37601
+pi@raspberrypi:~/nookframe $ sudo systemctl restart nookframe
 """
 
 import io

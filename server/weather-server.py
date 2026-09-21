@@ -1,30 +1,25 @@
-#!/usr/bin/env python3
 """
 NookFrame weather server (Python edition)
 -----------------------------------------
-
+ 
 Serves a 600x800 weather PNG over plain HTTP for the Nook Simple Touch.
-
-Run:
+ 
+Run locally:
     python3 weather-server.py
-
-Then point WeatherActivity.IMAGE_URL at:
+ 
+Deploy to the Pi (after pushing to GitHub):
+    pi@raspberrypi:~/nookframe $ curl -o weather-server.py https://raw.githubusercontent.com/mattfel1/nook_weather/main/server/weather-server.py
+    pi@raspberrypi:~/nookframe $ sudo systemctl restart nookframe
+ 
+Point WeatherActivity.IMAGE_URL at:
     http://<this-pi-ip>:8080/weather.png
-
+ 
 Toggle layouts in the browser:
     http://<pi>:8080/weather.png?o=portrait
     http://<pi>:8080/weather.png?o=landscape
     http://<pi>:8080/weather.png?o=landscape-preview   (un-rotated, for PC viewing)
-
-
-On the pi:
-pi@raspberrypi:~/nookframe $ curl -o weather-server.py https://raw.githubusercontent.com/mattfel1/nook_weather/main/server/weather-server.py
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100 15304  100 15304    0     0  37601      0 --:--:-- --:--:-- --:--:-- 37601
-pi@raspberrypi:~/nookframe $ sudo systemctl restart nookframe
 """
-
+ 
 import io
 import json
 import math
@@ -313,19 +308,38 @@ def render_portrait(data):
  
     # --- 3-day forecast ---
     col_w = W / 3
+    f_max = load_font(38, bold=True)
+    f_sep = load_font(28)
+    f_min = load_font(24)
     for i in range(3):
         cx = col_w * i + col_w / 2
         draw_text_centered(draw, cx, 580, day_name(d["time"][i], i),
                            load_font(28, bold=True))
         draw_icon(draw, d["weather_code"][i], cx, 660, 36)
-        draw_text_centered(draw, cx, 712,
-                           f"{round(d['temperature_2m_max'][i])}\u00B0",
-                           load_font(32, bold=True))
-        draw_text_centered(draw, cx, 755,
-                           f"{round(d['temperature_2m_min'][i])}\u00B0",
-                           load_font(24))
+ 
+        # Inline max/min: max bigger and sitting higher, min smaller and lower.
+        max_txt = f"{round(d['temperature_2m_max'][i])}\u00B0"
+        sep_txt = " / "
+        min_txt = f"{round(d['temperature_2m_min'][i])}\u00B0"
+        w_max = text_w(draw, max_txt, f_max)
+        w_sep = text_w(draw, sep_txt, f_sep)
+        w_min = text_w(draw, min_txt, f_min)
+        total = w_max + w_sep + w_min
+        cursor = cx - total / 2
+        # Baselines: max sits higher, min sits lower. Pick a common baseline
+        # and offset the y coordinates for each so their baselines land
+        # visually offset from center.
+        y_max = 710              # max drawn higher
+        y_sep = 720
+        y_min = 728              # min drawn slightly lower
+        draw.text((cursor, y_max), max_txt, fill=0, font=f_max)
+        cursor += w_max
+        draw.text((cursor, y_sep), sep_txt, fill=0, font=f_sep)
+        cursor += w_sep
+        draw.text((cursor, y_min), min_txt, fill=0, font=f_min)
+ 
         prob = d["precipitation_probability_max"][i] or 0
-        draw_text_centered(draw, cx, 785, f"{prob}% precip", load_font(16))
+        draw_text_centered(draw, cx, 770, f"{prob}% precip", load_font(16))
  
     return img
  
